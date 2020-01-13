@@ -3,28 +3,25 @@ jobs:
   build:
     working_directory: /dockerapp
     docker:
-      -
-        image: 'docker:17.05.0-ce-git'
+      - image: docker:17.05.0-ce-git
     steps:
       - checkout
       - setup_remote_docker
-      -
-        run:
-          name: 'Install dependencies'
-          command: "apk add --no-cache py-pip=9.0.0-r1\npip install docker-compose==1.15.0\n"
-      -
-        run:
-          name: 'Run tests'
-          command: "docker-compose up -d\ndocker-compose run dockerapp python test.py\n"
-      -
-        deployment: null
-        hub:
-          branch:
-            - circle_ci_publish
-            - master
-          commands:
-            - 'docker login -u $DOCKERHUBUSERID -p $DOCKERHUBUSERPWD'
-            - 'docker tag dockerapp_dockerapp $DOCKERHUBUSERID/dockerapp:$CIRCLE_SHA1'
-            - 'docker tag dockerapp_dockerapp $DOCKERHUBUSERID/dockerapp:latest'
-            - 'docker push $DOCKERHUBUSERID/dockerapp:$CIRCLE_SHA1'
-            - 'docker push $DOCKERHUBUSERID/dockerapp:latest'
+      - run:
+          name: Install dependencies
+          command: |
+            apk add --no-cache py-pip=9.0.0-r1
+            pip install docker-compose==1.15.0
+      - run:
+          name: Run tests
+          command: |
+            docker-compose up -d
+            docker-compose run dockerapp python test.py
+      - deploy:
+          name: Push application Docker image
+          command: |
+            docker login -e $DOCKERHUBUSERMAIL -u $DOCKERHUBUSERID -p $DOCKERHUBUSERPWD
+            docker tag dockerapp_dockerapp $DOCKERHUBUSERID/dockerapp:$CIRCLE_SHA1
+            docker tag dockerapp_dockerapp $DOCKERHUBUSERID/dockerapp:latest
+            docker push $DOCKERHUBUSERID/dockerapp:$CIRCLE_SHA1
+            docker push $DOCKERHUBUSERID/dockerapp:latest
